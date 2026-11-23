@@ -16,15 +16,16 @@ import { Audio } from "@remotion/media";
 export const FPS = 30;
 export const DURATION = Math.round(31.5 * FPS);
 
-const BG = "#0A0A0F";
+/* ---------- Línea gráfica (propuestas comerciales Luz Digital) ---------- */
+const BG = "#F7F5F2";
+const INK = "#0B0B0E";
+const MUTED = "#5B5868";
 const PURPLE = "#4B2A7B";
-const PURPLE_LIGHT = "#8B5CF6";
-const YELLOW = "#FDB913";
-const RED = "#FF4D5E";
+const YELLOW = "#FBB800";
+const RED = "#E5484D";
 const WHITE = "#FFFFFF";
-
-const HEAD = "Anton, 'Impact', sans-serif";
-const BODY = "Inter, 'Helvetica Neue', Arial, sans-serif";
+const FONT = "Inter, 'Helvetica Neue', Arial, sans-serif";
+const TIGHT = "-0.035em";
 
 const s = (sec: number) => Math.round(sec * FPS);
 
@@ -32,17 +33,9 @@ const s = (sec: number) => Math.round(sec * FPS);
 const useFonts = () => {
   const [handle] = useState(() => delayRender("fonts"));
   useEffect(() => {
-    const faces = [
-      new FontFace("Anton", `url(${staticFile("fonts/anton.woff2")})`, {
-        weight: "400",
-      }),
-      new FontFace("Inter", `url(${staticFile("fonts/inter600.woff2")})`, {
-        weight: "600",
-      }),
-      new FontFace("Inter", `url(${staticFile("fonts/inter800.woff2")})`, {
-        weight: "800",
-      }),
-    ];
+    const faces = [600, 700, 800].map(
+      (w) => new FontFace("Inter", `url(${staticFile(`fonts/inter${w}.woff2`)})`, { weight: String(w) }),
+    );
     Promise.all(faces.map((f) => f.load()))
       .then((loaded) => {
         loaded.forEach((f) => document.fonts.add(f));
@@ -82,18 +75,19 @@ const buildWords = (): Word[] => {
     const total = words.reduce((a, w) => a + w.length + 1, 0);
     let acc = 0;
     let inGroup = 0;
+    let chars = 0;
     words.forEach((w, i) => {
       const t = sen.start + ((sen.end - sen.start) * acc) / total;
       acc += w.length + 1;
-      if (inGroup >= 4 || (inGroup >= 3 && w.length > 7)) {
+      if (inGroup > 0 && chars + w.length > 17) {
         group++;
         inGroup = 0;
+        chars = 0;
       }
       out.push({ text: w, t, hl: sen.hl.includes(w), group });
       inGroup++;
-      if (i === words.length - 1) {
-        group++;
-      }
+      chars += w.length + 1;
+      if (i === words.length - 1) group++;
     });
   }
   return out;
@@ -108,30 +102,30 @@ const Captions: React.FC = () => {
   if (!shown.length) return null;
   const currentGroup = shown[shown.length - 1].group;
   const line = WORDS.filter((w) => w.group === currentGroup);
-  // si el grupo ya terminó hace rato, ocultar
-  const lastOfSentence = SENTENCES.find((sen) => now >= sen.start - 0.05 && now <= sen.end + 0.6);
-  if (!lastOfSentence) return null;
+  const active = SENTENCES.find((sen) => now >= sen.start - 0.05 && now <= sen.end + 0.6);
+  if (!active) return null;
   return (
     <div
       style={{
         position: "absolute",
         left: 60,
         right: 60,
-        top: 1370,
+        top: 1390,
         display: "flex",
         justifyContent: "center",
         flexWrap: "wrap",
-        gap: "10px 22px",
-        fontFamily: HEAD,
-        fontSize: 118,
-        lineHeight: 1.05,
-        textTransform: "uppercase",
+        gap: "6px 24px",
+        fontFamily: FONT,
+        fontWeight: 800,
+        fontSize: 104,
+        letterSpacing: TIGHT,
+        lineHeight: 1.08,
         textAlign: "center",
       }}
     >
       {line.map((w, i) => {
         if (w.t > now + 0.02) return null;
-        const pop = spring({
+        const p = spring({
           frame: frame - Math.round(w.t * fps),
           fps,
           config: { damping: 14, stiffness: 220 },
@@ -142,13 +136,11 @@ const Captions: React.FC = () => {
             key={i}
             style={{
               display: "inline-block",
-              transform: `scale(${0.7 + 0.3 * pop}) translateY(${(1 - pop) * 24}px)`,
-              opacity: pop,
-              color: w.hl ? BG : WHITE,
-              background: w.hl ? YELLOW : "transparent",
-              padding: w.hl ? "0 18px" : 0,
-              borderRadius: 14,
-              textShadow: w.hl ? "none" : "0 6px 30px rgba(0,0,0,.8)",
+              transform: `scale(${0.75 + 0.25 * p}) translateY(${(1 - p) * 22}px)`,
+              opacity: p,
+              color: w.hl ? PURPLE : INK,
+              backgroundImage: w.hl ? `linear-gradient(transparent 66%, ${YELLOW}AA 66%, ${YELLOW}AA 92%, transparent 92%)` : "none",
+              padding: "0 6px",
             }}
           >
             {w.text.replace(/[,.:]$/, "")}
@@ -159,51 +151,52 @@ const Captions: React.FC = () => {
   );
 };
 
-/* ---------- Utilidades visuales ---------- */
-const Background: React.FC = () => {
-  const frame = useCurrentFrame();
-  const drift = Math.sin(frame / 60) * 40;
-  return (
-    <AbsoluteFill style={{ background: BG }}>
-      <div
-        style={{
-          position: "absolute",
-          width: 1500,
-          height: 1100,
-          left: -210,
-          bottom: -420 + drift,
-          background: `radial-gradient(ellipse at center, ${PURPLE_LIGHT}66 0%, ${PURPLE}55 35%, transparent 70%)`,
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          width: 900,
-          height: 600,
-          left: 90,
-          top: -260,
-          background: `radial-gradient(ellipse at center, ${YELLOW}22 0%, transparent 70%)`,
-        }}
-      />
-      <AbsoluteFill
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px)",
-          backgroundSize: "90px 90px",
-          maskImage: "linear-gradient(to bottom, transparent 55%, black 100%)",
-          WebkitMaskImage: "linear-gradient(to bottom, transparent 55%, black 100%)",
-        }}
-      />
-    </AbsoluteFill>
-  );
-};
+/* ---------- Fondo y cabecera ---------- */
+const Background: React.FC = () => (
+  <AbsoluteFill style={{ background: BG }}>
+    <div
+      style={{
+        position: "absolute",
+        width: 1400,
+        height: 1100,
+        right: -500,
+        top: -420,
+        background: "radial-gradient(ellipse at center, #E4D9F7 0%, #EFE8FA66 45%, transparent 72%)",
+      }}
+    />
+    <div
+      style={{
+        position: "absolute",
+        width: 1100,
+        height: 800,
+        left: -450,
+        bottom: -380,
+        background: "radial-gradient(ellipse at center, #FBB80026 0%, transparent 70%)",
+      }}
+    />
+  </AbsoluteFill>
+);
+
+const Header: React.FC = () => (
+  <div style={{ position: "absolute", left: 64, right: 64, top: 70 }}>
+    <Img src={staticFile("logo/color.png")} style={{ width: 300, marginLeft: -48, marginTop: -64, marginBottom: -50 }} />
+    <div style={{ position: "relative", height: 8, background: PURPLE, borderRadius: 4, marginTop: 12 }}>
+      <div style={{ position: "absolute", left: 0, top: 0, width: 150, height: 8, background: YELLOW, borderRadius: 4 }} />
+    </div>
+  </div>
+);
 
 const Punch: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const p = spring({ frame, fps, config: { damping: 16, stiffness: 180 }, durationInFrames: 14 });
   return (
-    <AbsoluteFill style={{ transform: `scale(${1.05 - 0.05 * p})`, opacity: interpolate(frame, [0, 4], [0, 1], { extrapolateRight: "clamp" }) }}>
+    <AbsoluteFill
+      style={{
+        transform: `scale(${1.04 - 0.04 * p})`,
+        opacity: interpolate(frame, [0, 4], [0, 1], { extrapolateRight: "clamp" }),
+      }}
+    >
       {children}
     </AbsoluteFill>
   );
@@ -212,24 +205,38 @@ const Punch: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const pop = (frame: number, fps: number, delay = 0, dur = 16) =>
   spring({ frame: frame - delay, fps, config: { damping: 13, stiffness: 190 }, durationInFrames: dur });
 
-const Tag: React.FC<{ children: React.ReactNode; color?: string; fg?: string; style?: React.CSSProperties }> = ({
+/* ---------- Piezas reutilizables ---------- */
+const Eyebrow: React.FC<{ children: React.ReactNode; style?: React.CSSProperties }> = ({ children, style }) => (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 18,
+      fontFamily: FONT,
+      fontWeight: 800,
+      fontSize: 38,
+      letterSpacing: "0.16em",
+      textTransform: "uppercase",
+      color: PURPLE,
+      ...style,
+    }}
+  >
+    <span style={{ width: 26, height: 26, borderRadius: 8, background: YELLOW, display: "inline-block" }} />
+    {children}
+  </div>
+);
+
+const Card: React.FC<{ children: React.ReactNode; style?: React.CSSProperties; outline?: boolean }> = ({
   children,
-  color = RED,
-  fg = WHITE,
   style,
+  outline = true,
 }) => (
   <div
     style={{
-      display: "inline-block",
-      background: color,
-      color: fg,
-      fontFamily: BODY,
-      fontWeight: 800,
-      fontSize: 38,
-      letterSpacing: 2,
-      textTransform: "uppercase",
-      padding: "14px 30px",
-      borderRadius: 999,
+      background: WHITE,
+      borderRadius: 44,
+      border: outline ? `4px solid ${PURPLE}` : "3px solid #E5E1EC",
+      boxShadow: "0 24px 60px rgba(75,42,123,.12)",
       ...style,
     }}
   >
@@ -237,21 +244,15 @@ const Tag: React.FC<{ children: React.ReactNode; color?: string; fg?: string; st
   </div>
 );
 
-const Phone: React.FC<{ children: React.ReactNode; width?: number; height?: number }> = ({
-  children,
-  width = 700,
-  height = 1000,
-}) => (
+const DarkCard: React.FC<{ children: React.ReactNode; style?: React.CSSProperties }> = ({ children, style }) => (
   <div
     style={{
-      width,
-      height,
-      borderRadius: 80,
-      background: "#101016",
-      border: "3px solid #2c2c3a",
-      boxShadow: `0 40px 120px rgba(0,0,0,.7), 0 0 80px ${PURPLE_LIGHT}33`,
-      overflow: "hidden",
-      position: "relative",
+      background: "#0A0A0C",
+      borderRadius: 44,
+      borderLeft: `18px solid ${YELLOW}`,
+      color: WHITE,
+      boxShadow: "0 24px 60px rgba(0,0,0,.22)",
+      ...style,
     }}
   >
     {children}
@@ -264,91 +265,106 @@ const Heart: React.FC<{ size?: number; color?: string }> = ({ size = 40, color =
   </svg>
 );
 
+const Headline: React.FC<{ a: string; b?: string; size?: number; style?: React.CSSProperties }> = ({
+  a,
+  b,
+  size = 96,
+  style,
+}) => (
+  <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: size, letterSpacing: TIGHT, lineHeight: 1.02, color: INK, ...style }}>
+    {a}
+    {b ? <span style={{ color: PURPLE }}> {b}</span> : null}
+  </div>
+);
+
 /* ---------- ESCENA A: gancho ---------- */
 const SceneA: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const likes = Math.round(interpolate(frame, [0, 70], [180, 1240], { extrapolateRight: "clamp" }));
   const p = pop(frame, fps, 0, 20);
-  const emptyPulse = 0.6 + 0.4 * Math.sin(frame / 5);
+  const pulse = 0.65 + 0.35 * Math.sin(frame / 5);
   return (
-    <AbsoluteFill style={{ alignItems: "center" }}>
-      <Img src={staticFile("logo/blanco.png")} style={{ width: 360, marginTop: 40 }} />
-      <div style={{ marginTop: 20, transform: `scale(${0.85 + 0.15 * p})` }}>
-        <Phone width={720} height={940}>
-          <div style={{ padding: 44, fontFamily: BODY, color: WHITE }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 30 }}>
-              <div
-                style={{
-                  width: 150,
-                  height: 150,
-                  borderRadius: 75,
-                  background: `linear-gradient(135deg, ${PURPLE_LIGHT}, ${YELLOW})`,
-                  flexShrink: 0,
-                }}
-              />
-              <div style={{ display: "flex", gap: 36, fontSize: 30, textAlign: "center" }}>
-                {[
-                  ["128", "posts"],
-                  ["4.812", "seguidores"],
-                  ["301", "siguiendo"],
-                ].map(([n, l]) => (
-                  <div key={l}>
-                    <div style={{ fontWeight: 800, fontSize: 40 }}>{n}</div>
-                    <div style={{ opacity: 0.7, fontSize: 24 }}>{l}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div style={{ fontWeight: 800, fontSize: 34, marginTop: 28 }}>@tunegocio</div>
-            <div style={{ display: "flex", gap: 12, marginTop: 34, flexWrap: "wrap" }}>
-              {Array.from({ length: 9 }).map((_, i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: 190,
-                    height: 190,
-                    borderRadius: 14,
-                    background: `linear-gradient(${135 + i * 20}deg, ${i % 2 ? PURPLE : "#2a2a36"}, ${i % 3 ? "#1b1b24" : PURPLE_LIGHT}55)`,
-                  }}
-                />
+    <AbsoluteFill style={{ alignItems: "center", paddingTop: 250 }}>
+      <div style={{ transform: `scale(${0.88 + 0.12 * p})`, opacity: p }}>
+        <Card style={{ width: 880, padding: "44px 48px 48px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 36, fontFamily: FONT }}>
+            <div
+              style={{
+                width: 170,
+                height: 170,
+                borderRadius: 85,
+                background: `linear-gradient(135deg, ${PURPLE}, ${YELLOW})`,
+                flexShrink: 0,
+              }}
+            />
+            <div style={{ display: "flex", gap: 44, textAlign: "center" }}>
+              {[
+                ["128", "posts"],
+                ["4.812", "seguidores"],
+                ["301", "siguiendo"],
+              ].map(([n, l]) => (
+                <div key={l}>
+                  <div style={{ fontWeight: 800, fontSize: 52, letterSpacing: TIGHT, color: INK }}>{n}</div>
+                  <div style={{ fontSize: 28, fontWeight: 600, color: MUTED }}>{l}</div>
+                </div>
               ))}
             </div>
           </div>
-          {/* likes */}
+          <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 42, color: INK, margin: "26px 0 6px" }}>@tunegocio</div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 20 }}>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  width: 246,
+                  height: 210,
+                  borderRadius: 18,
+                  background: i % 3 === 0 ? "#E9E1F7" : i % 3 === 1 ? "#F3EEE4" : "#E4E1EA",
+                }}
+              />
+            ))}
+          </div>
           <div
             style={{
-              position: "absolute",
-              left: 44,
-              right: 44,
-              bottom: 44,
-              borderRadius: 30,
-              background: "#1b1b25",
-              padding: "26px 34px",
-              fontFamily: BODY,
-              color: WHITE,
+              display: "flex",
+              alignItems: "center",
+              gap: 18,
+              marginTop: 30,
+              fontFamily: FONT,
+              fontWeight: 800,
+              fontSize: 44,
+              color: INK,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 18, fontSize: 36, fontWeight: 800 }}>
-              <Heart /> {likes.toLocaleString("es-CO")} me gusta
-            </div>
-            <div
-              style={{
-                marginTop: 14,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                fontSize: 36,
-                fontWeight: 800,
-                color: RED,
-                opacity: frame > 20 ? emptyPulse + 0.2 : 0,
-              }}
-            >
-              <span>Mensajes nuevos</span>
-              <span style={{ fontFamily: HEAD, fontSize: 64 }}>0</span>
-            </div>
+            <Heart size={48} /> {likes.toLocaleString("es-CO")} me gusta
           </div>
-        </Phone>
+        </Card>
+        <DarkCard
+          style={{
+            width: 880,
+            marginTop: 30,
+            padding: "36px 48px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 46, letterSpacing: TIGHT }}>Mensajes nuevos</div>
+          <div
+            style={{
+              fontFamily: FONT,
+              fontWeight: 800,
+              fontSize: 130,
+              letterSpacing: TIGHT,
+              color: YELLOW,
+              opacity: frame > 18 ? pulse + 0.25 : 0,
+              lineHeight: 1,
+            }}
+          >
+            0
+          </div>
+        </DarkCard>
       </div>
     </AbsoluteFill>
   );
@@ -361,30 +377,31 @@ const SceneB: React.FC = () => {
   const p = pop(frame, fps, 0, 18);
   const items = ["Bio", "Feed", "Camino"];
   return (
-    <AbsoluteFill style={{ alignItems: "center", justifyContent: "flex-start", paddingTop: 170 }}>
+    <AbsoluteFill style={{ alignItems: "center", paddingTop: 250 }}>
       <div
         style={{
-          fontFamily: HEAD,
-          fontSize: 760,
-          lineHeight: 0.9,
-          color: YELLOW,
+          fontFamily: FONT,
+          fontWeight: 800,
+          fontSize: 640,
+          lineHeight: 0.85,
+          letterSpacing: "-0.06em",
+          color: PURPLE,
           transform: `scale(${0.5 + 0.5 * p})`,
-          textShadow: `0 0 120px ${YELLOW}55`,
         }}
       >
         3
       </div>
-      <div style={{ fontFamily: HEAD, fontSize: 130, color: WHITE, textTransform: "uppercase", marginTop: -10 }}>
-        errores
-      </div>
-      <div style={{ display: "flex", gap: 22, marginTop: 40 }}>
+      <Headline a="errores" b="comunes" size={130} style={{ marginTop: 6, textAlign: "center" }} />
+      <div style={{ display: "flex", gap: 22, marginTop: 56 }}>
         {items.map((t, i) => {
           const q = pop(frame, fps, 24 + i * 9, 14);
           return (
             <div key={t} style={{ transform: `scale(${q})`, opacity: q }}>
-              <Tag color="#1d1d28" fg={WHITE} style={{ border: `3px solid ${RED}`, fontSize: 40 }}>
-                ✕ {t}
-              </Tag>
+              <Card outline={false} style={{ borderRadius: 999, padding: "18px 38px", border: `3px solid ${RED}`, boxShadow: "none" }}>
+                <span style={{ fontFamily: FONT, fontWeight: 800, fontSize: 44, color: INK }}>
+                  <span style={{ color: RED }}>✕</span> {t}
+                </span>
+              </Card>
             </div>
           );
         })}
@@ -398,56 +415,43 @@ const SceneC: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const p = pop(frame, fps, 0, 18);
-  const lineP = interpolate(frame, [26, 44], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const mark = interpolate(frame, [26, 44], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const tagP = pop(frame, fps, 40, 14);
   return (
-    <AbsoluteFill style={{ alignItems: "center", paddingTop: 150 }}>
-      <Tag color={RED} style={{ marginBottom: 36, transform: `scale(${pop(frame, fps, 0, 12)})` }}>
-        Error 1 · La bio
-      </Tag>
-      <div style={{ transform: `scale(${0.85 + 0.15 * p})` }}>
-        <div
-          style={{
-            width: 880,
-            background: "#14141b",
-            borderRadius: 40,
-            border: "3px solid #2c2c3a",
-            padding: "56px 56px 60px",
-            fontFamily: BODY,
-            color: WHITE,
-            fontSize: 50,
-            lineHeight: 1.45,
-            boxShadow: "0 40px 120px rgba(0,0,0,.6)",
-          }}
-        >
-          <div style={{ fontWeight: 800, fontSize: 56 }}>Tu Negocio | Servicios</div>
-          <div style={{ opacity: 0.9 }}>Ayudamos a que resaltes tu marca</div>
-          <div style={{ opacity: 0.9 }}>+ 5 años de experiencia</div>
+    <AbsoluteFill style={{ alignItems: "center", paddingTop: 250 }}>
+      <Eyebrow style={{ marginBottom: 34, opacity: pop(frame, fps, 0, 12) }}>Error 1 · La bio</Eyebrow>
+      <div style={{ transform: `scale(${0.88 + 0.12 * p})`, opacity: p }}>
+        <Card style={{ width: 900, padding: "54px 56px 58px", fontFamily: FONT, color: INK, fontSize: 52, lineHeight: 1.5 }}>
+          <div style={{ fontWeight: 800, fontSize: 58, letterSpacing: TIGHT }}>Tu Negocio | Servicios</div>
+          <div style={{ color: MUTED, fontWeight: 600 }}>Ayudamos a que resaltes tu marca</div>
+          <div style={{ color: MUTED, fontWeight: 600 }}>+ 5 años de experiencia</div>
           <div style={{ position: "relative", display: "inline-block", fontWeight: 800 }}>
-            3122194897
-            <div
+            <span
               style={{
                 position: "absolute",
-                left: -12,
-                right: -12,
-                bottom: 2,
-                height: 8,
-                borderRadius: 4,
-                background: RED,
+                left: -10,
+                right: -10,
+                top: 8,
+                bottom: 6,
+                background: `${YELLOW}`,
+                borderRadius: 10,
                 transformOrigin: "left",
-                transform: `scaleX(${lineP})`,
+                transform: `scaleX(${mark})`,
               }}
             />
+            <span style={{ position: "relative" }}>3122194897</span>
           </div>
-          <div style={{ opacity: 0.9 }}>
-            C… <span style={{ opacity: 0.55 }}>más</span>
+          <div style={{ color: MUTED, fontWeight: 600 }}>
+            C… <span style={{ opacity: 0.6 }}>más</span>
           </div>
-        </div>
+        </Card>
       </div>
-      <div style={{ marginTop: 46, transform: `scale(${tagP})`, opacity: tagP }}>
-        <Tag color={YELLOW} fg={BG} style={{ fontSize: 46 }}>
-          Un número no dice qué hacer
-        </Tag>
+      <div style={{ marginTop: 44, transform: `scale(${tagP})`, opacity: tagP }}>
+        <DarkCard style={{ padding: "26px 46px" }}>
+          <span style={{ fontFamily: FONT, fontWeight: 800, fontSize: 46, letterSpacing: TIGHT }}>
+            Un número <span style={{ color: YELLOW }}>no dice qué hacer</span>
+          </span>
+        </DarkCard>
       </div>
     </AbsoluteFill>
   );
@@ -458,10 +462,8 @@ const SceneD: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   return (
-    <AbsoluteFill style={{ alignItems: "center", paddingTop: 150 }}>
-      <Tag color={RED} style={{ marginBottom: 36, transform: `scale(${pop(frame, fps, 0, 12)})` }}>
-        Error 2 · El feed
-      </Tag>
+    <AbsoluteFill style={{ alignItems: "center", paddingTop: 250 }}>
+      <Eyebrow style={{ marginBottom: 34, opacity: pop(frame, fps, 0, 12) }}>Error 2 · El feed</Eyebrow>
       <div style={{ display: "flex", flexWrap: "wrap", width: 900, gap: 12 }}>
         {Array.from({ length: 12 }).map((_, i) => {
           const q = pop(frame, fps, 4 + i * 2, 12);
@@ -470,19 +472,20 @@ const SceneD: React.FC = () => {
               key={i}
               style={{
                 width: 292,
-                height: 232,
-                borderRadius: 18,
-                background: `linear-gradient(145deg, ${PURPLE_LIGHT}, ${PURPLE})`,
+                height: 214,
+                borderRadius: 26,
+                background: PURPLE,
                 transform: `scale(${q})`,
                 opacity: q,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontFamily: HEAD,
-                fontSize: 58,
+                fontFamily: FONT,
+                fontWeight: 800,
+                fontSize: 46,
+                letterSpacing: TIGHT,
                 color: WHITE,
-                textTransform: "uppercase",
-                letterSpacing: 2,
+                boxShadow: "0 14px 30px rgba(75,42,123,.25)",
               }}
             >
               Lo mismo
@@ -500,7 +503,7 @@ const SceneE: React.FC = () => {
   const { fps } = useVideoConfig();
   const draw = interpolate(frame, [8, 40], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const brk = pop(frame, fps, 42, 10);
-  const node = (label: string, left: boolean, delay: number) => {
+  const node = (label: string, first: boolean, delay: number) => {
     const q = pop(frame, fps, delay, 14);
     return (
       <div
@@ -509,15 +512,17 @@ const SceneE: React.FC = () => {
           width: 300,
           height: 300,
           borderRadius: 150,
-          background: left ? "#1d1d28" : `linear-gradient(145deg, ${YELLOW}, #e69b00)`,
-          border: left ? `4px solid ${PURPLE_LIGHT}` : "none",
+          background: first ? WHITE : YELLOW,
+          border: first ? `5px solid ${PURPLE}` : "none",
+          boxShadow: "0 24px 60px rgba(75,42,123,.16)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: HEAD,
-          fontSize: 70,
-          textTransform: "uppercase",
-          color: left ? WHITE : BG,
+          fontFamily: FONT,
+          fontWeight: 800,
+          fontSize: 54,
+          letterSpacing: TIGHT,
+          color: INK,
         }}
       >
         {label}
@@ -525,13 +530,11 @@ const SceneE: React.FC = () => {
     );
   };
   return (
-    <AbsoluteFill style={{ alignItems: "center", paddingTop: 150 }}>
-      <Tag color={RED} style={{ marginBottom: 90, transform: `scale(${pop(frame, fps, 0, 12)})` }}>
-        Error 3 · El camino
-      </Tag>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+    <AbsoluteFill style={{ alignItems: "center", paddingTop: 250 }}>
+      <Eyebrow style={{ marginBottom: 56, opacity: pop(frame, fps, 0, 12) }}>Error 3 · El camino</Eyebrow>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         {node("Seguidor", true, 2)}
-        <div style={{ position: "relative", width: 12, height: 330 }}>
+        <div style={{ position: "relative", width: 12, height: 300 }}>
           <div
             style={{
               position: "absolute",
@@ -539,26 +542,27 @@ const SceneE: React.FC = () => {
               top: 0,
               width: 12,
               height: `${draw * 46}%`,
-              background: `repeating-linear-gradient(${PURPLE_LIGHT} 0 18px, transparent 18px 34px)`,
+              background: `repeating-linear-gradient(${PURPLE} 0 18px, transparent 18px 34px)`,
             }}
           />
           <div
             style={{
               position: "absolute",
               left: -62,
-              top: 110,
+              top: 100,
               width: 136,
               height: 136,
               borderRadius: 68,
               background: RED,
               color: WHITE,
-              fontFamily: HEAD,
-              fontSize: 96,
+              fontFamily: FONT,
+              fontWeight: 800,
+              fontSize: 80,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               transform: `scale(${brk})`,
-              boxShadow: `0 0 60px ${RED}99`,
+              boxShadow: `0 0 50px ${RED}77`,
             }}
           >
             ✕
@@ -585,8 +589,8 @@ const SceneF: React.FC = () => {
   const sceneStart = s(15.0);
   const abs = frame + sceneStart;
   return (
-    <AbsoluteFill style={{ alignItems: "center", paddingTop: 110 }}>
-      <div style={{ position: "relative", width: 800, height: 1034 }}>
+    <AbsoluteFill style={{ alignItems: "center", paddingTop: 300 }}>
+      <div style={{ position: "relative", width: 780, height: 1010 }}>
         {PAGES.map((pg, i) => {
           const start = s(pg.from);
           const next = PAGES[i + 1] ? s(PAGES[i + 1].from) : Infinity;
@@ -594,7 +598,7 @@ const SceneF: React.FC = () => {
           const local = abs - start;
           const q = spring({ frame: local, fps, config: { damping: 15, stiffness: 170 }, durationInFrames: 16 });
           const out = abs >= next ? interpolate(abs, [next, next + 8], [1, 0], { extrapolateRight: "clamp" }) : 1;
-          const tilt = (i % 2 ? 1 : -1) * 2.2;
+          const tilt = (i % 2 ? 1 : -1) * 2;
           return (
             <div
               key={pg.src}
@@ -603,9 +607,9 @@ const SceneF: React.FC = () => {
                 inset: 0,
                 transform: `translateY(${(1 - q) * 160}px) rotate(${tilt * q}deg) scale(${0.9 + 0.1 * q})`,
                 opacity: Math.min(q, out),
-                borderRadius: 18,
+                borderRadius: 22,
                 overflow: "hidden",
-                boxShadow: `0 40px 120px rgba(0,0,0,.75), 0 0 0 3px ${PURPLE_LIGHT}55`,
+                boxShadow: `0 30px 80px rgba(75,42,123,.28), 0 0 0 4px ${PURPLE}`,
                 background: WHITE,
               }}
             >
@@ -621,11 +625,11 @@ const SceneF: React.FC = () => {
           return (
             <div
               key={pg.label}
-              style={{ position: "absolute", left: 0, right: 0, top: -64, display: "flex", justifyContent: "center", transform: `scale(${q})` }}
+              style={{ position: "absolute", left: 0, right: 0, top: -74, display: "flex", justifyContent: "center", transform: `scale(${q})` }}
             >
-              <Tag color={YELLOW} fg={BG} style={{ fontSize: 40 }}>
+              <Eyebrow style={{ fontSize: 32, whiteSpace: "nowrap", letterSpacing: "0.12em", background: WHITE, padding: "12px 30px", borderRadius: 999, border: `3px solid ${PURPLE}` }}>
                 {pg.label}
-              </Tag>
+              </Eyebrow>
             </div>
           );
         })}
@@ -634,60 +638,62 @@ const SceneF: React.FC = () => {
   );
 };
 
-/* ---------- ESCENA G: recibo US$ 75 ---------- */
+/* ---------- ESCENA G: lo que incluye + US$ 75 ---------- */
 const SceneG: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const p = spring({ frame, fps, config: { damping: 15, stiffness: 140 }, durationInFrames: 20 });
-  const rows = [
-    "Diagnóstico del perfil",
-    "Matriz FODA",
-    "Propuesta de contenido",
-    "Optimización de bio y destacados",
-    "Plan de 30 días",
-  ];
+  const rows = ["Diagnóstico del perfil", "Matriz FODA", "Propuesta de contenido", "Optimización de bio y destacados", "Plan de 30 días"];
   return (
-    <AbsoluteFill style={{ alignItems: "center", paddingTop: 150 }}>
-      <div
-        style={{
-          width: 840,
-          background: "#F6F3EC",
-          color: "#1a1a1f",
-          fontFamily: "'Courier New', monospace",
-          padding: "56px 56px 50px",
-          transform: `rotate(${-4 + (1 - p) * -10}deg) translateY(${(1 - p) * 500}px)`,
-          boxShadow: "0 40px 120px rgba(0,0,0,.7)",
-        }}
-      >
-        <div style={{ fontFamily: BODY, fontWeight: 800, letterSpacing: 4, fontSize: 30, color: PURPLE }}>
-          LUZ DIGITAL · CREATIVE AGENCY
-        </div>
-        <div style={{ fontFamily: HEAD, fontSize: 84, textTransform: "uppercase", margin: "10px 0 6px" }}>
-          Auditoría de Instagram
-        </div>
-        <div style={{ borderTop: "3px dashed #1a1a1f55", margin: "20px 0" }} />
-        {rows.map((r, i) => {
-          const q = pop(frame, fps, 12 + i * 6, 10);
-          return (
-            <div key={r} style={{ fontSize: 36, margin: "16px 0", opacity: q, transform: `translateX(${(1 - q) * 40}px)` }}>
-              ✓ {r}
-            </div>
-          );
-        })}
-        <div style={{ borderTop: "3px dashed #1a1a1f55", margin: "26px 0 16px" }} />
-        <div
+    <AbsoluteFill style={{ alignItems: "center", paddingTop: 250 }}>
+      <div style={{ transform: `translateY(${(1 - p) * 400}px)`, opacity: p }}>
+        <Card style={{ width: 900, padding: "48px 56px 44px" }}>
+          <Eyebrow style={{ fontSize: 34 }}>Qué incluye</Eyebrow>
+          <div style={{ marginTop: 22 }}>
+            {rows.map((r, i) => {
+              const q = pop(frame, fps, 10 + i * 6, 10);
+              return (
+                <div
+                  key={r}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 22,
+                    margin: "20px 0",
+                    fontFamily: FONT,
+                    fontWeight: 700,
+                    fontSize: 46,
+                    letterSpacing: "-0.02em",
+                    color: INK,
+                    opacity: q,
+                    transform: `translateX(${(1 - q) * 40}px)`,
+                  }}
+                >
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke={PURPLE} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 12l5 5L20 6" />
+                  </svg>
+                  {r}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+        <DarkCard
           style={{
+            width: 900,
+            marginTop: 30,
+            padding: "30px 52px",
             display: "flex",
+            alignItems: "center",
             justifyContent: "space-between",
-            alignItems: "baseline",
-            fontFamily: HEAD,
-            fontSize: 110,
-            opacity: pop(frame, fps, 46, 10),
+            opacity: pop(frame, fps, 44, 10),
           }}
         >
-          <span style={{ fontSize: 64 }}>TOTAL</span>
-          <span style={{ color: PURPLE }}>US$ 75</span>
-        </div>
+          <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 36, letterSpacing: "0.16em", textTransform: "uppercase", color: "#cfc8e0" }}>
+            Precio de la auditoría
+          </div>
+          <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 110, letterSpacing: TIGHT, color: YELLOW }}>US$ 75</div>
+        </DarkCard>
       </div>
     </AbsoluteFill>
   );
@@ -700,35 +706,50 @@ const SceneH: React.FC = () => {
   const strike = interpolate(frame, [0, 10], [0, 1], { extrapolateRight: "clamp" });
   const zero = spring({ frame: frame - 14, fps, config: { damping: 9, stiffness: 160 }, durationInFrames: 22 });
   return (
-    <AbsoluteFill style={{ alignItems: "center", paddingTop: 260 }}>
-      <div style={{ position: "relative", whiteSpace: "nowrap", fontFamily: HEAD, fontSize: 250, color: "#ffffff88" }}>
+    <AbsoluteFill style={{ alignItems: "center", paddingTop: 300 }}>
+      <Eyebrow style={{ marginBottom: 20 }}>Precio regular</Eyebrow>
+      <div
+        style={{
+          position: "relative",
+          whiteSpace: "nowrap",
+          fontFamily: FONT,
+          fontWeight: 800,
+          fontSize: 230,
+          letterSpacing: TIGHT,
+          color: "#B9B4C6",
+        }}
+      >
         US$ 75
         <div
           style={{
             position: "absolute",
             left: -20,
             right: -20,
-            top: "52%",
+            top: "54%",
             height: 20,
             background: RED,
+            borderRadius: 10,
             transformOrigin: "left",
             transform: `scaleX(${strike}) rotate(-4deg)`,
           }}
         />
       </div>
-      <div
-        style={{
-          fontFamily: HEAD,
-          fontSize: 430,
-          whiteSpace: "nowrap",
-          color: YELLOW,
-          lineHeight: 1,
-          marginTop: 30,
-          transform: `scale(${zero})`,
-          textShadow: `0 0 160px ${YELLOW}88`,
-        }}
-      >
-        US$ 0
+      <div style={{ transform: `scale(${zero})`, marginTop: 40 }}>
+        <DarkCard style={{ padding: "14px 70px 24px 60px" }}>
+          <div
+            style={{
+              fontFamily: FONT,
+              fontWeight: 800,
+              fontSize: 250,
+              letterSpacing: "-0.05em",
+              whiteSpace: "nowrap",
+              color: YELLOW,
+              lineHeight: 1.05,
+            }}
+          >
+            US$ 0
+          </div>
+        </DarkCard>
       </div>
     </AbsoluteFill>
   );
@@ -740,49 +761,53 @@ const SceneI: React.FC = () => {
   const { fps } = useVideoConfig();
   const logoP = pop(frame, fps, 0, 18);
   const btn = pop(frame, fps, 16, 16);
-  const pulse = 1 + 0.03 * Math.sin(frame / 4);
+  const pulse = 1 + 0.025 * Math.sin(frame / 4);
   return (
-    <AbsoluteFill style={{ alignItems: "center", paddingTop: 200 }}>
-      <Img src={staticFile("logo/blanco.png")} style={{ width: 880, transform: `scale(${logoP})` }} />
-      <div style={{ marginTop: 30, transform: `scale(${btn * pulse})` }}>
+    <AbsoluteFill style={{ alignItems: "center", paddingTop: 220 }}>
+      <Img src={staticFile("logo/color.png")} style={{ width: 920, transform: `scale(${logoP})` }} />
+      <div style={{ position: "relative", width: 760, height: 8, background: PURPLE, borderRadius: 4, marginTop: -30, opacity: logoP }}>
+        <div style={{ position: "absolute", left: 0, top: 0, width: 190, height: 8, background: YELLOW, borderRadius: 4 }} />
+      </div>
+      <div style={{ marginTop: 70, transform: `scale(${btn * pulse})` }}>
         <div
           style={{
             background: YELLOW,
-            color: BG,
-            fontFamily: HEAD,
-            fontSize: 96,
-            textTransform: "uppercase",
-            padding: "30px 64px",
+            color: INK,
+            fontFamily: FONT,
+            fontWeight: 800,
+            fontSize: 100,
+            letterSpacing: TIGHT,
+            padding: "34px 70px",
             borderRadius: 999,
             display: "flex",
             alignItems: "center",
-            gap: 24,
-            boxShadow: `0 0 100px ${YELLOW}66`,
+            gap: 26,
+            boxShadow: `0 24px 60px ${YELLOW}77`,
           }}
         >
-          <svg width="80" height="80" viewBox="0 0 24 24" fill={BG}>
+          <svg width="84" height="84" viewBox="0 0 24 24" fill={INK}>
             <path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
           </svg>
           Comenta
         </div>
       </div>
-      <div style={{ marginTop: 28, opacity: pop(frame, fps, 26, 14) }}>
-        <div style={{ fontFamily: HEAD, fontSize: 120, color: WHITE, textTransform: "uppercase" }}>Auditoría</div>
+      <div style={{ marginTop: 30, opacity: pop(frame, fps, 26, 14) }}>
+        <Headline a="" b="AUDITORÍA" size={150} />
       </div>
     </AbsoluteFill>
   );
 };
 
 /* ---------- Composición principal ---------- */
-const SCENES: { from: number; to: number; C: React.FC }[] = [
-  { from: 0, to: 3.2, C: SceneA },
-  { from: 3.2, to: 6.0, C: SceneB },
-  { from: 6.0, to: 9.5, C: SceneC },
-  { from: 9.5, to: 12.2, C: SceneD },
-  { from: 12.2, to: 15.0, C: SceneE },
-  { from: 15.0, to: 22.6, C: SceneF },
-  { from: 22.6, to: 25.4, C: SceneG },
-  { from: 25.4, to: 27.1, C: SceneH },
+const SCENES: { from: number; to: number; C: React.FC; header?: boolean }[] = [
+  { from: 0, to: 3.2, C: SceneA, header: true },
+  { from: 3.2, to: 6.0, C: SceneB, header: true },
+  { from: 6.0, to: 9.5, C: SceneC, header: true },
+  { from: 9.5, to: 12.2, C: SceneD, header: true },
+  { from: 12.2, to: 15.0, C: SceneE, header: true },
+  { from: 15.0, to: 22.6, C: SceneF, header: true },
+  { from: 22.6, to: 25.4, C: SceneG, header: true },
+  { from: 25.4, to: 27.1, C: SceneH, header: true },
   { from: 27.1, to: 31.5, C: SceneI },
 ];
 
@@ -791,8 +816,9 @@ export const AuditoriaVideo: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: BG }}>
       <Background />
-      {SCENES.map(({ from, to, C }, i) => (
-        <Sequence key={i} from={s(from)} durationInFrames={s(to) - s(from)} name={C.name || `Escena ${i + 1}`}>
+      {SCENES.map(({ from, to, C, header }, i) => (
+        <Sequence key={i} from={s(from)} durationInFrames={s(to) - s(from)} name={`Escena ${i + 1}`}>
+          {header ? <Header /> : null}
           <Punch>
             <C />
           </Punch>

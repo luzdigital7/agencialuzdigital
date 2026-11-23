@@ -1,21 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { AbsoluteFill, Img, continueRender, delayRender, staticFile } from "remotion";
 
-const BG = "#0A0A0F";
+const BG = "#F7F5F2";
+const INK = "#0B0B0E";
 const PURPLE = "#4B2A7B";
-const PURPLE_LIGHT = "#8B5CF6";
-const YELLOW = "#FDB913";
-const RED = "#FF4D5E";
-const HEAD = "Anton, 'Impact', sans-serif";
-const BODY = "Inter, Arial, sans-serif";
+const YELLOW = "#FBB800";
+const RED = "#E5484D";
+const FONT = "Inter, Arial, sans-serif";
+const TIGHT = "-0.04em";
 
 export const Portada: React.FC = () => {
   const [handle] = useState(() => delayRender("fonts"));
   useEffect(() => {
-    const faces = [
-      new FontFace("Anton", `url(${staticFile("fonts/anton.woff2")})`),
-      new FontFace("Inter", `url(${staticFile("fonts/inter800.woff2")})`, { weight: "800" }),
-    ];
+    const faces = [700, 800].map(
+      (w) => new FontFace("Inter", `url(${staticFile(`fonts/inter${w}.woff2`)})`, { weight: String(w) }),
+    );
     Promise.all(faces.map((f) => f.load()))
       .then((l) => {
         l.forEach((f) => document.fonts.add(f));
@@ -26,28 +25,31 @@ export const Portada: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ background: BG, alignItems: "center" }}>
-      <div style={{ position: "absolute", width: 1500, height: 1100, left: -210, bottom: -380, background: `radial-gradient(ellipse at center, ${PURPLE_LIGHT}77 0%, ${PURPLE}66 35%, transparent 70%)` }} />
-      <div style={{ position: "absolute", width: 900, height: 600, left: 90, top: -240, background: `radial-gradient(ellipse at center, ${YELLOW}26 0%, transparent 70%)` }} />
-      <AbsoluteFill style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px)", backgroundSize: "90px 90px" }} />
+      <div style={{ position: "absolute", width: 1500, height: 1200, right: -550, top: -450, background: "radial-gradient(ellipse at center, #E4D9F7 0%, #EFE8FA66 45%, transparent 72%)" }} />
+      <div style={{ position: "absolute", width: 1200, height: 900, left: -500, bottom: -420, background: "radial-gradient(ellipse at center, #FBB80030 0%, transparent 70%)" }} />
 
-      <Img src={staticFile("logo/blanco.png")} style={{ position: "absolute", top: 300, width: 520 }} />
-
-      <div style={{ position: "absolute", top: 590, width: "100%", textAlign: "center", fontFamily: HEAD, textTransform: "uppercase", color: "#fff" }}>
-        <div style={{ fontSize: 150, lineHeight: 1 }}>Auditoría de tu</div>
-        <div style={{ fontSize: 215, lineHeight: 1, color: YELLOW, textShadow: `0 0 120px ${YELLOW}66` }}>Instagram</div>
+      <Img src={staticFile("logo/color.png")} style={{ position: "absolute", top: 250, width: 700 }} />
+      <div style={{ position: "absolute", top: 520, width: 760, height: 10, background: PURPLE, borderRadius: 5 }}>
+        <div style={{ width: 190, height: 10, background: YELLOW, borderRadius: 5 }} />
       </div>
 
-      <div style={{ position: "absolute", top: 1090, display: "flex", alignItems: "center", gap: 40 }}>
-        <div style={{ position: "relative", fontFamily: HEAD, fontSize: 150, color: "#ffffff88", whiteSpace: "nowrap" }}>
+      <div style={{ position: "absolute", top: 610, width: "100%", textAlign: "center", fontFamily: FONT, fontWeight: 800, letterSpacing: TIGHT, color: INK }}>
+        <div style={{ fontSize: 138, lineHeight: 1.02 }}>Auditoría de tu</div>
+        <div style={{ fontSize: 200, lineHeight: 1.0, color: PURPLE }}>Instagram</div>
+      </div>
+
+      <div style={{ position: "absolute", top: 1060, display: "flex", alignItems: "center", gap: 30 }}>
+        <div style={{ position: "relative", fontFamily: FONT, fontWeight: 800, fontSize: 96, letterSpacing: TIGHT, color: "#B9B4C6", whiteSpace: "nowrap" }}>
           US$ 75
-          <div style={{ position: "absolute", left: -14, right: -14, top: "54%", height: 14, background: RED, transform: "rotate(-4deg)" }} />
+          <div style={{ position: "absolute", left: -14, right: -14, top: "54%", height: 14, background: RED, borderRadius: 7, transform: "rotate(-4deg)" }} />
         </div>
-        <div style={{ background: YELLOW, color: BG, fontFamily: HEAD, fontSize: 170, textTransform: "uppercase", padding: "0 48px", borderRadius: 24, lineHeight: 1.12 }}>
-          Gratis
+        <div style={{ background: "#0A0A0C", borderLeft: `18px solid ${YELLOW}`, borderRadius: 40, padding: "6px 40px 14px 34px", color: YELLOW, fontFamily: FONT, fontWeight: 800, fontSize: 118, letterSpacing: TIGHT, lineHeight: 1.1, boxShadow: "0 24px 60px rgba(0,0,0,.22)" }}>
+          GRATIS
         </div>
       </div>
 
-      <div style={{ position: "absolute", top: 1360, whiteSpace: "nowrap", fontFamily: BODY, fontWeight: 800, fontSize: 40, letterSpacing: 2, color: "#fff", textTransform: "uppercase", textAlign: "center", lineHeight: 1.5 }}>
+      <div style={{ position: "absolute", top: 1330, display: "flex", alignItems: "center", gap: 18, fontFamily: FONT, fontWeight: 800, fontSize: 31, letterSpacing: "0.1em", textTransform: "uppercase", color: PURPLE, whiteSpace: "nowrap" }}>
+        <span style={{ width: 26, height: 26, borderRadius: 8, background: YELLOW, display: "inline-block" }} />
         FODA · Contenido · Reels · Plan de 30 días
       </div>
     </AbsoluteFill>
