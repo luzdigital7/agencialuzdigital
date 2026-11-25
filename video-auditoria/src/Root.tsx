@@ -8,7 +8,8 @@ export const RemotionRoot: React.FC = () => {
     <>
       <Composition id="AuditoriaPasos" component={AuditoriaPasos} durationInFrames={DURATION} fps={FPS} width={1080} height={1920} defaultProps={{ variant: "dark" as const }} />
       <Composition id="AuditoriaPasosClaro" component={AuditoriaPasos} durationInFrames={DURATION} fps={FPS} width={1080} height={1920} defaultProps={{ variant: "light" as const }} />
-      <Composition id="Portada" component={Portada} durationInFrames={1} fps={30} width={1080} height={1920} />
+      <Composition id="Portada" component={Portada} durationInFrames={1} fps={30} width={1080} height={1920} defaultProps={{ variant: "dark" as const }} />
+      <Composition id="PortadaClara" component={Portada} durationInFrames={1} fps={30} width={1080} height={1920} defaultProps={{ variant: "light" as const }} />
       <Composition id="AuditoriaInstagram" component={AuditoriaVideo} durationInFrames={D1} fps={F1} width={1080} height={1920} />
     </>
   );

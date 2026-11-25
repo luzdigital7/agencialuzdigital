@@ -35,7 +35,7 @@ export const Portada: React.FC<{ variant?: "dark" | "light" }> = ({ variant = "d
         <div style={{ fontFamily: "Anton", fontSize: 112, lineHeight: 1.1, color: fg, textTransform: "uppercase", marginTop: 36 }}>de tu Instagram</div>
         <div style={{ marginTop: 40, display: "flex", gap: 16, flexWrap: "wrap" }}>
           {["FODA", "Contenido", "Reels", "Plan 30 días"].map((x) => (
-            <div key={x} style={{ fontFamily: "Poppins", fontWeight: 600, fontSize: 34, padding: "10px 26px", borderRadius: 999, border: `2px solid ${YELLOW}`, color: YELLOW }}>{x}</div>
+            <div key={x} style={{ fontFamily: "Poppins", fontWeight: 600, fontSize: 34, padding: "10px 26px", borderRadius: 999, border: `2px solid ${dark ? YELLOW : "#4B2A7B"}`, color: dark ? YELLOW : "#4B2A7B", background: dark ? "transparent" : "#fff" }}>{x}</div>
           ))}
         </div>
       </div>
